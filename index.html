@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Telegram Customer Chat</title>
+<style>
+body{font-family:Arial;background:#e5ddd5;margin:0;padding:10px}
+.chat{height:420px;overflow:auto;background:#fff;padding:10px;border-radius:6px}
+.msg{max-width:70%;padding:8px;margin:6px 0;border-radius:8px;font-size:14px}
+.user{background:#f1f1f1}
+.admin{background:#dcf8c6;margin-left:auto}
+small{color:#777}
+input,button{width:100%;padding:10px;margin-top:6px;font-size:14px}
+button{background:#0088cc;color:#fff;border:none;border-radius:4px}
+</style>
+</head>
+<body>
+
+<h3>Customer Chat</h3>
+
+<div id="chat" class="chat"></div>
+
+<input id="text" placeholder="Type reply to customers">
+<button onclick="send()">Send</button>
+
+<script>
+const API = "https://api.telegram.org/bot8435347096:AAEpBEDgft_w46jSGPVAqLEmUxI0vOh3opk/setWebhook?url=https://script.google.com/macros/s/AKfycbxSkmLEdi-aYAZWo8JsEQMxQ-DK5__1fcdeE80HsIVz3mmulYZ6UgYdt2InXsTLZkwsLg/exec
+
+"; // ← replace only this
+
+function load(){
+ fetch(API).then(r=>r.json()).then(d=>{
+  let h="";
+  d.forEach(m=>{
+   h+=`<div class="msg ${m.from=='admin'?'admin':'user'}">
+        <b>${m.name||''}</b><br>${m.text||''}<br>
+        <small>${m.time||''}</small>
+       </div>`;
+  });
+  chat.innerHTML=h;
+  chat.scrollTop=chat.scrollHeight;
+ });
+}
+
+function send(){
+ const t=document.getElementById("text").value.trim();
+ if(!t) return;
+ fetch(API+"?send=1&text="+encodeURIComponent(t))
+  .then(()=>{ document.getElementById("text").value=""; load(); });
+}
+
+load();
+setInterval(load,4000);
+</script>
+
+</body>
+</html>
