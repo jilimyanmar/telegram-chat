@@ -1,181 +1,22 @@
 <!DOCTYPE html>
 <html>
-<head>
-<meta charset="UTF-8">
-<title>Telegram Admin</title>
-
-<style>
-body{margin:0;font-family:Arial;background:#dfe7ec}
-.app{display:flex;height:100vh}
-
-/* LEFT */
-.sidebar{
-  width:32%;
-  background:#fff;
-  border-right:1px solid #ccc;
-  overflow-y:auto;
-}
-.user{
-  padding:12px;
-  border-bottom:1px solid #eee;
-  cursor:pointer;
-}
-.user.active{background:#0088cc;color:white}
-.name{font-weight:bold}
-.preview{
-  font-size:13px;
-  color:#666;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
-}
-.badge{
-  background:red;
-  color:white;
-  border-radius:12px;
-  padding:2px 7px;
-  font-size:12px;
-  float:right;
-}
-
-/* CHAT */
-.chat-area{width:68%;display:flex;flex-direction:column;background:#e5ddd5}
-.header{background:#0088cc;color:white;padding:12px}
-.messages{flex:1;padding:15px;overflow-y:auto}
-.bubble{
-  max-width:65%;
-  padding:10px;
-  margin-bottom:8px;
-  border-radius:10px;
-}
-.user-msg{background:white}
-.admin-msg{background:#dcf8c6;margin-left:auto}
-.time{font-size:11px;color:#666;margin-top:4px}
-
-/* INPUT */
-.input{
-  padding:10px;
-  background:#f0f0f0;
-}
-.input input{
-  width:100%;
-  padding:10px;
-  margin-bottom:5px;
-}
-</style>
-</head>
-
 <body>
 
-<div class="app">
-
-  <div class="sidebar" id="users"></div>
-
-  <div class="chat-area">
-    <div class="header" id="header">Select chat</div>
-    <div class="messages" id="chat"></div>
-    <div class="input">
-      <input id="text" placeholder="Message">
-      <input id="image" placeholder="Image URL (optional)">
-      <button onclick="send()">Send</button>
-    </div>
-  </div>
-
-</div>
+<h3>Users from Backend</h3>
+<pre id="out">Loading...</pre>
 
 <script>
 const API = "https://script.google.com/macros/s/AKfycbxSkmLEdi-aYAZWo8JsEQMxQ-DK5__1fcdeE80HsIVz3mmulYZ6UgYdt2InXsTLZkwsLg/exec";
 
-let chats = {};
-let currentChatId = null;
-
-function loadChats() {
-  fetch(API + "?_=" + Date.now()) // 🚫 disable cache
-    .then(res => res.json())
-    .then(data => {
-      chats = data || {};
-      renderUserList();
-
-      // auto-select first user
-      if (!currentChatId && Object.keys(chats).length > 0) {
-        currentChatId = Object.keys(chats)[0];
-        renderChat();
-      }
-    })
-    .catch(err => console.log("Load error:", err));
-}
-
-function renderUserList() {
-  const usersDiv = document.getElementById("users");
-  usersDiv.innerHTML = "";
-
-  Object.keys(chats).forEach(chatId => {
-    const u = chats[chatId];
-    const last = u.messages[u.messages.length - 1];
-
-    const div = document.createElement("div");
-    div.className = "user" + (chatId === currentChatId ? " active" : "");
-    div.onclick = () => {
-      currentChatId = chatId;
-      renderChat();
-      renderUserList();
-    };
-
-    div.innerHTML = `
-      <div class="name">${u.name || "User"}</div>
-      <div class="preview">
-        ${last?.text || (last?.photo ? "📷 Photo" : "")}
-      </div>
-      ${u.unread > 0 ? `<span class="badge">${u.unread}</span>` : ""}
-    `;
-
-    usersDiv.appendChild(div);
+fetch(API + "?debug=" + Date.now())
+  .then(r => r.text())
+  .then(t => {
+    document.getElementById("out").innerText = t;
+  })
+  .catch(e => {
+    document.getElementById("out").innerText = "ERROR: " + e;
   });
-}
-
-function renderChat() {
-  if (!currentChatId) return;
-
-  const chatDiv = document.getElementById("chat");
-  const header = document.getElementById("header");
-  const u = chats[currentChatId];
-
-  header.innerText = u.name || "User";
-  chatDiv.innerHTML = "";
-
-  u.messages.forEach(m => {
-    const msg = document.createElement("div");
-    msg.className = "bubble " + (m.from === "admin" ? "admin-msg" : "user-msg");
-    msg.innerHTML = `
-      ${m.text || ""}
-      <div class="time">${m.time || ""}</div>
-    `;
-    chatDiv.appendChild(msg);
-  });
-
-  chatDiv.scrollTop = chatDiv.scrollHeight;
-}
-
-function sendMessage() {
-  if (!currentChatId) return alert("Select a user first");
-
-  const input = document.getElementById("text");
-  const text = input.value.trim();
-  if (!text) return;
-
-  fetch(API + `?send=1&chatId=${currentChatId}&text=` + encodeURIComponent(text))
-    .then(() => {
-      input.value = "";
-      setTimeout(loadChats, 300);
-    });
-}
-
-// initial load
-loadChats();
-setInterval(loadChats, 3000);
 </script>
-
-
 
 </body>
 </html>
