@@ -175,15 +175,26 @@ function openChat(id){
 }
 
 function send(){
- if(!currentUser) return alert("Select a user");
- let t = text.value.trim();
- if(!t) return;
+  if(!currentUser) return alert("Select a user");
 
- fetch(API+`?send=1&chatId=${currentUser}&text=`+encodeURIComponent(t))
-  .then(()=>{
-    text.value="";
-    load();
-  });
+  let t = text.value.trim();
+  if(!t) return;
+
+  // Disable send button temporarily
+  text.disabled = true;
+
+  fetch(API + `?send=1&chatId=${currentUser}&text=` + encodeURIComponent(t))
+    .then(r => r.text())
+    .then(res => {
+      text.value = "";
+      text.disabled = false;
+
+      // 🔄 Force reload after backend save
+      setTimeout(() => {
+        load();
+        openChat(currentUser);
+      }, 300);
+    });
 }
 
 load();
