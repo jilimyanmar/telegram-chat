@@ -24,22 +24,23 @@ button{background:#0088cc;color:#fff;border:none;border-radius:4px}
 <button onclick="send()">Send</button>
 
 <script>
-const API = "https://api.telegram.org/bot8435347096:AAEpBEDgft_w46jSGPVAqLEmUxI0vOh3opk/setWebhook?url=https://script.google.com/macros/s/AKfycbxSkmLEdi-aYAZWo8JsEQMxQ-DK5__1fcdeE80HsIVz3mmulYZ6UgYdt2InXsTLZkwsLg/exec
-
-"; // ← replace only this
+const API = "https://script.google.com/macros/s/AKfycbxSkmLEdi-aYAZWo8JsEQMxQ-DK5__1fcdeE80HsIVz3mmulYZ6UgYdt2InXsTLZkwsLg/exec";
 
 function load(){
- fetch(API).then(r=>r.json()).then(d=>{
-  let h="";
-  d.forEach(m=>{
-   h+=`<div class="msg ${m.from=='admin'?'admin':'user'}">
-        <b>${m.name||''}</b><br>${m.text||''}<br>
-        <small>${m.time||''}</small>
-       </div>`;
+ fetch(API)
+  .then(r=>r.json())
+  .then(d=>{
+    let h="";
+    d.forEach(m=>{
+      h+=`<div class="msg ${m.from=='admin'?'admin':'user'}">
+           <b>${m.name||''}</b><br>
+           ${m.text||''}<br>
+           <small>${m.time||''}</small>
+          </div>`;
+    });
+    chat.innerHTML=h;
+    chat.scrollTop=chat.scrollHeight;
   });
-  chat.innerHTML=h;
-  chat.scrollTop=chat.scrollHeight;
- });
 }
 
 function send(){
@@ -52,6 +53,7 @@ function send(){
 load();
 setInterval(load,4000);
 </script>
+
 
 </body>
 </html>
