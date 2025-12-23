@@ -85,61 +85,92 @@ body{margin:0;font-family:Arial;background:#dfe7ec}
 
 <script>
 const API = "https://script.google.com/macros/s/AKfycbxSkmLEdi-aYAZWo8JsEQMxQ-DK5__1fcdeE80HsIVz3mmulYZ6UgYdt2InXsTLZkwsLg/exec";
-let chats={}, current=null;
 
-function load(){
- fetch(API).then(r=>r.json()).then(d=>{
-  chats=d;
-  renderUsers();
- });
+let chats = {};
+let current = null;
+
+// Load chats from backend
+function load() {
+  fetch(API)
+    .then(r => r.json())
+    .then(d => {
+      chats = d || {};
+      renderUsers();
+
+      // ✅ Auto select first user if none selected
+      if (!current && Object.keys(chats).length > 0) {
+        current = Object.keys(chats)[0];
+        openChat(current);
+      }
+    });
 }
 
-function renderUsers(){
- let h="";
- for(let id in chats){
-  const last=chats[id].messages.slice(-1)[0];
-  h+=`
-   <div class="user ${id===current?'active':''}" onclick="openChat('${id}')">
-    <span class="name">${chats[id].name}</span>
-    ${chats[id].unread?`<span class="badge">${chats[id].unread}</span>`:""}
-    <div class="preview">${last?.text || (last?.photo?"📷 Photo":"")}</div>
-   </div>`;
- }
- users.innerHTML=h;
-}
+// Render user list (LEFT SIDEBAR)
+function renderUsers() {
+  let html = "";
 
-function openChat(id){
- current=id;
- header.innerText=chats[id].name;
- chats[id].unread=0;
- renderUsers();
+  Object.keys(chats).forEach(id => {
+    const u = chats[id];
+    const last = u.messages[u.messages.length - 1];
 
- let h="";
- chats[id].messages.forEach(m=>{
-  h+=`
-   <div class="bubble ${m.from==='admin'?'admin-msg':'user-msg'}">
-    ${m.text||""}
-    ${m.photo?`<br><img src="https://api.telegram.org/file/bot<TOKEN>/${m.photo}" width="200">`:""}
-    ${m.image?`<br><img src="${m.image}" width="200">`:""}
-    <div class="time">${m.time}</div>
-   </div>`;
- });
- chat.innerHTML=h;
- chat.scrollTop=chat.scrollHeight;
-}
-
-function send(){
- if(!current) return alert("Select user");
- fetch(API+`?send=1&chatId=${current}&text=${encodeURIComponent(text.value)}&image=${encodeURIComponent(image.value)}`)
-  .then(()=>{
-    text.value="";image.value="";
-    load();openChat(current);
+    html += `
+      <div class="user ${id === current ? 'active' : ''}" onclick="openChat('${id}')">
+        <div class="name">${u.name || 'User'}</div>
+        <div class="preview">
+          ${last?.text || (last?.photo ? '📷 Photo' : '')}
+        </div>
+        ${u.unread > 0 ? `<span class="badge">${u.unread}</span>` : ''}
+      </div>
+    `;
   });
+
+  document.getElementById("users").innerHTML = html;
 }
 
+// Open chat
+function openChat(id) {
+  current = id;
+  const u = chats[id];
+  document.getElementById("header").innerText = u.name || "User";
+
+  let html = "";
+  u.messages.forEach(m => {
+    html += `
+      <div class="bubble ${m.from === 'admin' ? 'admin-msg' : 'user-msg'}">
+        ${m.text || ''}
+        <div class="time">${m.time || ''}</div>
+      </div>
+    `;
+  });
+
+  document.getElementById("chat").innerHTML = html;
+  document.getElementById("chat").scrollTop = chat.scrollHeight;
+
+  // Clear unread
+  u.unread = 0;
+  renderUsers();
+}
+
+// Send admin message
+function send() {
+  if (!current) return alert("Select a user");
+
+  const t = document.getElementById("text").value.trim();
+  if (!t) return;
+
+  fetch(API + `?send=1&chatId=${current}&text=` + encodeURIComponent(t))
+    .then(() => {
+      document.getElementById("text").value = "";
+      load();
+      setTimeout(() => openChat(current), 300);
+    });
+}
+
+// Initial load
 load();
-setInterval(load,5000);
+setInterval(load, 3000);
 </script>
+
 
 </body>
 </html>
