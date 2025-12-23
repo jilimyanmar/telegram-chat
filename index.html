@@ -90,19 +90,20 @@ let chats = {};
 let current = null;
 
 function load() {
-  fetch(API)
+  fetch(API + "?t=" + Date.now()) // 🔥 cache buster
     .then(res => res.json())
     .then(data => {
       chats = data || {};
       renderUsers();
 
-      // Auto-select first user if none selected
       if (!current && Object.keys(chats).length > 0) {
         current = Object.keys(chats)[0];
         openChat(current);
       }
-    });
+    })
+    .catch(err => console.log("Fetch error", err));
 }
+
 
 function renderUsers() {
   let html = "";
