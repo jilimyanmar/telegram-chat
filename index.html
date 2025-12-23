@@ -87,86 +87,94 @@ body{margin:0;font-family:Arial;background:#dfe7ec}
 const API = "https://script.google.com/macros/s/AKfycbxSkmLEdi-aYAZWo8JsEQMxQ-DK5__1fcdeE80HsIVz3mmulYZ6UgYdt2InXsTLZkwsLg/exec";
 
 let chats = {};
-let current = null;
+let currentChatId = null;
 
-function load() {
-  fetch(API + "?t=" + Date.now()) // 🔥 cache buster
+function loadChats() {
+  fetch(API + "?_=" + Date.now()) // 🚫 disable cache
     .then(res => res.json())
     .then(data => {
       chats = data || {};
-      renderUsers();
+      renderUserList();
 
-      if (!current && Object.keys(chats).length > 0) {
-        current = Object.keys(chats)[0];
-        openChat(current);
+      // auto-select first user
+      if (!currentChatId && Object.keys(chats).length > 0) {
+        currentChatId = Object.keys(chats)[0];
+        renderChat();
       }
     })
-    .catch(err => console.log("Fetch error", err));
+    .catch(err => console.log("Load error:", err));
 }
 
+function renderUserList() {
+  const usersDiv = document.getElementById("users");
+  usersDiv.innerHTML = "";
 
-function renderUsers() {
-  let html = "";
-
-  Object.keys(chats).forEach(id => {
-    const u = chats[id];
+  Object.keys(chats).forEach(chatId => {
+    const u = chats[chatId];
     const last = u.messages[u.messages.length - 1];
 
-    html += `
-      <div class="user ${id === current ? 'active' : ''}" onclick="openChat('${id}')">
-        <div class="name">${u.name || 'User'}</div>
-        <div class="preview">
-          ${last?.text || (last?.photo ? '📷 Photo' : '')}
-        </div>
-        ${u.unread > 0 ? `<span class="badge">${u.unread}</span>` : ''}
-      </div>
-    `;
-  });
+    const div = document.createElement("div");
+    div.className = "user" + (chatId === currentChatId ? " active" : "");
+    div.onclick = () => {
+      currentChatId = chatId;
+      renderChat();
+      renderUserList();
+    };
 
-  document.getElementById("users").innerHTML = html;
+    div.innerHTML = `
+      <div class="name">${u.name || "User"}</div>
+      <div class="preview">
+        ${last?.text || (last?.photo ? "📷 Photo" : "")}
+      </div>
+      ${u.unread > 0 ? `<span class="badge">${u.unread}</span>` : ""}
+    `;
+
+    usersDiv.appendChild(div);
+  });
 }
 
-function openChat(id) {
-  current = id;
-  const u = chats[id];
-  document.getElementById("header").innerText = u.name || "User";
+function renderChat() {
+  if (!currentChatId) return;
 
-  let html = "";
+  const chatDiv = document.getElementById("chat");
+  const header = document.getElementById("header");
+  const u = chats[currentChatId];
+
+  header.innerText = u.name || "User";
+  chatDiv.innerHTML = "";
+
   u.messages.forEach(m => {
-    html += `
-      <div class="bubble ${m.from === 'admin' ? 'admin-msg' : 'user-msg'}">
-        ${m.text || ''}
-        <div class="time">${m.time || ''}</div>
-      </div>
+    const msg = document.createElement("div");
+    msg.className = "bubble " + (m.from === "admin" ? "admin-msg" : "user-msg");
+    msg.innerHTML = `
+      ${m.text || ""}
+      <div class="time">${m.time || ""}</div>
     `;
+    chatDiv.appendChild(msg);
   });
 
-  document.getElementById("chat").innerHTML = html;
-  document.getElementById("chat").scrollTop = chat.scrollHeight;
-
-  // Reset unread visually
-  u.unread = 0;
-  renderUsers();
+  chatDiv.scrollTop = chatDiv.scrollHeight;
 }
 
-function send() {
-  if (!current) return alert("Select a user first");
+function sendMessage() {
+  if (!currentChatId) return alert("Select a user first");
 
-  const t = document.getElementById("text").value.trim();
-  if (!t) return;
+  const input = document.getElementById("text");
+  const text = input.value.trim();
+  if (!text) return;
 
-  fetch(API + `?send=1&chatId=${current}&text=` + encodeURIComponent(t))
+  fetch(API + `?send=1&chatId=${currentChatId}&text=` + encodeURIComponent(text))
     .then(() => {
-      document.getElementById("text").value = "";
-      load();
-      setTimeout(() => openChat(current), 300);
+      input.value = "";
+      setTimeout(loadChats, 300);
     });
 }
 
-// Start polling
-load();
-setInterval(load, 3000);
+// initial load
+loadChats();
+setInterval(loadChats, 3000);
 </script>
+
 
 
 </body>
