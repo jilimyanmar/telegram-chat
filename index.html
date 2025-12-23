@@ -1,19 +1,142 @@
-<div style="display:flex;height:500px">
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Telegram Admin Chat</title>
 
-  <div id="users" style="width:30%;border-right:1px solid #ccc;overflow:auto"></div>
+<style>
+body{
+  margin:0;
+  font-family:Arial, sans-serif;
+  background:#dfe7ec;
+}
 
-  <div style="width:70%;padding:10px">
-    <div id="chat" style="height:400px;overflow:auto"></div>
-    <input id="text" placeholder="Type reply">
-    <button onclick="send()">Send</button>
+.app{
+  display:flex;
+  height:100vh;
+}
+
+/* LEFT SIDEBAR */
+.sidebar{
+  width:30%;
+  background:#ffffff;
+  border-right:1px solid #ccc;
+  overflow-y:auto;
+}
+
+.user{
+  padding:15px;
+  border-bottom:1px solid #eee;
+  cursor:pointer;
+}
+
+.user:hover{
+  background:#f5f5f5;
+}
+
+.user.active{
+  background:#0088cc;
+  color:white;
+}
+
+/* RIGHT CHAT */
+.chat-area{
+  width:70%;
+  display:flex;
+  flex-direction:column;
+  background:#e5ddd5;
+}
+
+.chat-header{
+  background:#0088cc;
+  color:white;
+  padding:15px;
+  font-weight:bold;
+}
+
+.chat-messages{
+  flex:1;
+  padding:15px;
+  overflow-y:auto;
+}
+
+.bubble{
+  max-width:65%;
+  padding:10px;
+  margin-bottom:10px;
+  border-radius:10px;
+  font-size:14px;
+}
+
+.user-msg{
+  background:white;
+  align-self:flex-start;
+}
+
+.admin-msg{
+  background:#dcf8c6;
+  align-self:flex-end;
+}
+
+.time{
+  font-size:11px;
+  color:#666;
+  margin-top:4px;
+}
+
+/* INPUT */
+.input-area{
+  padding:10px;
+  background:#f0f0f0;
+  display:flex;
+}
+
+.input-area input{
+  flex:1;
+  padding:10px;
+  border:1px solid #ccc;
+  border-radius:6px;
+}
+
+.input-area button{
+  margin-left:10px;
+  padding:10px 16px;
+  background:#0088cc;
+  color:white;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+}
+</style>
+
+</head>
+<body>
+
+<div class="app">
+
+  <!-- USER LIST -->
+  <div class="sidebar" id="users"></div>
+
+  <!-- CHAT -->
+  <div class="chat-area">
+    <div class="chat-header" id="chatHeader">
+      Select a chat
+    </div>
+
+    <div class="chat-messages" id="chat"></div>
+
+    <div class="input-area">
+      <input id="text" placeholder="Type a message">
+      <button onclick="send()">Send</button>
+    </div>
   </div>
 
 </div>
 
 <script>
 const API = "https://script.google.com/macros/s/AKfycbxSkmLEdi-aYAZWo8JsEQMxQ-DK5__1fcdeE80HsIVz3mmulYZ6UgYdt2InXsTLZkwsLg/exec";
-let currentUser = null;
 let chats = {};
+let currentUser = null;
 
 function load(){
  fetch(API).then(r=>r.json()).then(d=>{
@@ -23,36 +146,49 @@ function load(){
 }
 
 function renderUsers(){
- let h="";
+ let html="";
  for(let id in chats){
-  h+=`<div onclick="openChat('${id}')" style="padding:8px;border-bottom:1px solid #eee;cursor:pointer">
-       ${chats[id].name}
-      </div>`;
+  html += `
+   <div class="user ${id===currentUser?'active':''}" onclick="openChat('${id}')">
+    ${chats[id].name}
+   </div>`;
  }
- users.innerHTML=h;
+ users.innerHTML = html;
 }
 
 function openChat(id){
- currentUser=id;
- let m=chats[id].messages;
- let h="";
- m.forEach(x=>{
-  h+=`<div style="margin:5px;text-align:${x.from=='admin'?'right':'left'}">
-       ${x.text}<br><small>${x.time}</small>
-      </div>`;
+ currentUser = id;
+ chatHeader.innerText = chats[id].name;
+ renderUsers();
+
+ let html="";
+ chats[id].messages.forEach(m=>{
+  html += `
+   <div class="bubble ${m.from==='admin'?'admin-msg':'user-msg'}">
+    ${m.text}
+    <div class="time">${m.time}</div>
+   </div>`;
  });
- chat.innerHTML=h;
- chat.scrollTop=chat.scrollHeight;
+
+ chat.innerHTML = html;
+ chat.scrollTop = chat.scrollHeight;
 }
 
 function send(){
- if(!currentUser) return alert("Select user");
- let t=text.value.trim();
+ if(!currentUser) return alert("Select a user");
+ let t = text.value.trim();
  if(!t) return;
+
  fetch(API+`?send=1&chatId=${currentUser}&text=`+encodeURIComponent(t))
-  .then(()=>{ text.value=""; load(); });
+  .then(()=>{
+    text.value="";
+    load();
+  });
 }
 
 load();
 setInterval(load,5000);
 </script>
+
+</body>
+</html>
