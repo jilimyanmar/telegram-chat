@@ -1,59 +1,58 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>Telegram Customer Chat</title>
-<style>
-body{font-family:Arial;background:#e5ddd5;margin:0;padding:10px}
-.chat{height:420px;overflow:auto;background:#fff;padding:10px;border-radius:6px}
-.msg{max-width:70%;padding:8px;margin:6px 0;border-radius:8px;font-size:14px}
-.user{background:#f1f1f1}
-.admin{background:#dcf8c6;margin-left:auto}
-small{color:#777}
-input,button{width:100%;padding:10px;margin-top:6px;font-size:14px}
-button{background:#0088cc;color:#fff;border:none;border-radius:4px}
-</style>
-</head>
-<body>
+<div style="display:flex;height:500px">
 
-<h3>Customer Chat</h3>
+  <div id="users" style="width:30%;border-right:1px solid #ccc;overflow:auto"></div>
 
-<div id="chat" class="chat"></div>
+  <div style="width:70%;padding:10px">
+    <div id="chat" style="height:400px;overflow:auto"></div>
+    <input id="text" placeholder="Type reply">
+    <button onclick="send()">Send</button>
+  </div>
 
-<input id="text" placeholder="Type reply to customers">
-<button onclick="send()">Send</button>
+</div>
 
 <script>
 const API = "https://script.google.com/macros/s/AKfycbxSkmLEdi-aYAZWo8JsEQMxQ-DK5__1fcdeE80HsIVz3mmulYZ6UgYdt2InXsTLZkwsLg/exec";
+let currentUser = null;
+let chats = {};
 
 function load(){
- fetch(API)
-  .then(r=>r.json())
-  .then(d=>{
-    let h="";
-    d.forEach(m=>{
-      h+=`<div class="msg ${m.from=='admin'?'admin':'user'}">
-           <b>${m.name||''}</b><br>
-           ${m.text||''}<br>
-           <small>${m.time||''}</small>
-          </div>`;
-    });
-    chat.innerHTML=h;
-    chat.scrollTop=chat.scrollHeight;
-  });
+ fetch(API).then(r=>r.json()).then(d=>{
+  chats = d;
+  renderUsers();
+ });
+}
+
+function renderUsers(){
+ let h="";
+ for(let id in chats){
+  h+=`<div onclick="openChat('${id}')" style="padding:8px;border-bottom:1px solid #eee;cursor:pointer">
+       ${chats[id].name}
+      </div>`;
+ }
+ users.innerHTML=h;
+}
+
+function openChat(id){
+ currentUser=id;
+ let m=chats[id].messages;
+ let h="";
+ m.forEach(x=>{
+  h+=`<div style="margin:5px;text-align:${x.from=='admin'?'right':'left'}">
+       ${x.text}<br><small>${x.time}</small>
+      </div>`;
+ });
+ chat.innerHTML=h;
+ chat.scrollTop=chat.scrollHeight;
 }
 
 function send(){
- const t=document.getElementById("text").value.trim();
+ if(!currentUser) return alert("Select user");
+ let t=text.value.trim();
  if(!t) return;
- fetch(API+"?send=1&text="+encodeURIComponent(t))
-  .then(()=>{ document.getElementById("text").value=""; load(); });
+ fetch(API+`?send=1&chatId=${currentUser}&text=`+encodeURIComponent(t))
+  .then(()=>{ text.value=""; load(); });
 }
 
 load();
-setInterval(load,4000);
+setInterval(load,5000);
 </script>
-
-
-</body>
-</html>
