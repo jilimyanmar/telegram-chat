@@ -89,15 +89,14 @@ const API = "https://script.google.com/macros/s/AKfycbxSkmLEdi-aYAZWo8JsEQMxQ-DK
 let chats = {};
 let current = null;
 
-// Load chats from backend
 function load() {
   fetch(API)
-    .then(r => r.json())
-    .then(d => {
-      chats = d || {};
+    .then(res => res.json())
+    .then(data => {
+      chats = data || {};
       renderUsers();
 
-      // ✅ Auto select first user if none selected
+      // Auto-select first user if none selected
       if (!current && Object.keys(chats).length > 0) {
         current = Object.keys(chats)[0];
         openChat(current);
@@ -105,7 +104,6 @@ function load() {
     });
 }
 
-// Render user list (LEFT SIDEBAR)
 function renderUsers() {
   let html = "";
 
@@ -127,7 +125,6 @@ function renderUsers() {
   document.getElementById("users").innerHTML = html;
 }
 
-// Open chat
 function openChat(id) {
   current = id;
   const u = chats[id];
@@ -146,14 +143,13 @@ function openChat(id) {
   document.getElementById("chat").innerHTML = html;
   document.getElementById("chat").scrollTop = chat.scrollHeight;
 
-  // Clear unread
+  // Reset unread visually
   u.unread = 0;
   renderUsers();
 }
 
-// Send admin message
 function send() {
-  if (!current) return alert("Select a user");
+  if (!current) return alert("Select a user first");
 
   const t = document.getElementById("text").value.trim();
   if (!t) return;
@@ -166,7 +162,7 @@ function send() {
     });
 }
 
-// Initial load
+// Start polling
 load();
 setInterval(load, 3000);
 </script>
