@@ -1,21 +1,194 @@
 <!DOCTYPE html>
 <html>
+<head>
+<meta charset="UTF-8">
+<title>Telegram Admin Panel</title>
+
+<style>
+body{
+  margin:0;
+  font-family:Arial;
+  background:#dfe7ec;
+}
+.app{
+  display:flex;
+  height:100vh;
+}
+
+/* LEFT USER LIST */
+.sidebar{
+  width:30%;
+  background:#fff;
+  border-right:1px solid #ccc;
+  overflow-y:auto;
+}
+.user{
+  padding:12px;
+  border-bottom:1px solid #eee;
+  cursor:pointer;
+}
+.user.active{
+  background:#0088cc;
+  color:#fff;
+}
+.preview{
+  font-size:13px;
+  color:#666;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.badge{
+  background:red;
+  color:white;
+  border-radius:12px;
+  padding:2px 7px;
+  font-size:12px;
+  float:right;
+}
+
+/* CHAT AREA */
+.chat{
+  width:70%;
+  display:flex;
+  flex-direction:column;
+}
+.header{
+  background:#0088cc;
+  color:white;
+  padding:12px;
+}
+.messages{
+  flex:1;
+  padding:15px;
+  overflow-y:auto;
+  background:#e5ddd5;
+}
+.bubble{
+  max-width:65%;
+  padding:10px;
+  margin-bottom:8px;
+  border-radius:10px;
+}
+.user-msg{
+  background:#fff;
+}
+.admin-msg{
+  background:#dcf8c6;
+  margin-left:auto;
+}
+.time{
+  font-size:11px;
+  color:#666;
+}
+
+/* INPUT */
+.input{
+  padding:10px;
+  background:#f0f0f0;
+}
+.input input{
+  width:100%;
+  padding:10px;
+}
+</style>
+
+</head>
 <body>
 
-<h3>Users from Backend</h3>
-<pre id="out">Loading...</pre>
+<div class="app">
+
+  <div class="sidebar" id="users"></div>
+
+  <div class="chat">
+    <div class="header" id="header">Select user</div>
+    <div class="messages" id="chat"></div>
+    <div class="input">
+      <input id="text" placeholder="Type message and press Enter">
+    </div>
+  </div>
+
+</div>
 
 <script>
 const API = "https://script.google.com/macros/s/AKfycbxSkmLEdi-aYAZWo8JsEQMxQ-DK5__1fcdeE80HsIVz3mmulYZ6UgYdt2InXsTLZkwsLg/exec";
 
-fetch(API + "?debug=" + Date.now())
-  .then(r => r.text())
-  .then(t => {
-    document.getElementById("out").innerText = t;
-  })
-  .catch(e => {
-    document.getElementById("out").innerText = "ERROR: " + e;
+let chats = {};
+let current = null;
+
+/* LOAD DATA */
+function load(){
+  fetch(API + "?t=" + Date.now())
+    .then(r => r.json())
+    .then(data => {
+      chats = data || {};
+      renderUsers();
+
+      if(!current && Object.keys(chats).length > 0){
+        current = Object.keys(chats)[0];
+        openChat(current);
+      }
+    });
+}
+
+/* RENDER USER LIST */
+function renderUsers(){
+  let html = "";
+  for(let id in chats){
+    let u = chats[id];
+    let last = u.messages[u.messages.length - 1];
+
+    html += `
+      <div class="user ${id===current?'active':''}" onclick="openChat('${id}')">
+        <b>${u.name}</b>
+        ${u.unread>0?`<span class="badge">${u.unread}</span>`:""}
+        <div class="preview">${last?.text || ""}</div>
+      </div>
+    `;
+  }
+  document.getElementById("users").innerHTML = html;
+}
+
+/* OPEN CHAT */
+function openChat(id){
+  current = id;
+  let u = chats[id];
+  document.getElementById("header").innerText = u.name;
+
+  let html = "";
+  u.messages.forEach(m=>{
+    html += `
+      <div class="bubble ${m.from==='admin'?'admin-msg':'user-msg'}">
+        ${m.text || ""}
+        <div class="time">${m.time || ""}</div>
+      </div>
+    `;
   });
+
+  document.getElementById("chat").innerHTML = html;
+  document.getElementById("chat").scrollTop = chat.scrollHeight;
+
+  u.unread = 0;
+  renderUsers();
+}
+
+/* SEND MESSAGE */
+document.getElementById("text").addEventListener("keydown", function(e){
+  if(e.key === "Enter"){
+    let t = this.value.trim();
+    if(!t || !current) return;
+
+    fetch(API + `?send=1&chatId=${current}&text=` + encodeURIComponent(t))
+      .then(()=>{
+        this.value="";
+        setTimeout(load,300);
+      });
+  }
+});
+
+/* START */
+load();
+setInterval(load,3000);
 </script>
 
 </body>
